@@ -54,7 +54,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: | 
-          docker build -t new /repo
+          docker build -t new repo
           
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${GITHUB_SHA}
       - name: helm repo
