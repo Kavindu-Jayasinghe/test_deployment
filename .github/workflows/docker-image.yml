@@ -57,7 +57,7 @@ jobs:
           docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${GITHUB_SHA} SmsMate.Processor/Dockerfile .
           
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${GITHUB_SHA}
-     
+      - name: helm repo
         run: |
           git clone --depth 1 --branch main https://${{ secrets.PAT_TOKEN }}@github.com/sgnanosoftglobal/coop_os_prod_deployment helm-repo
           cd helm-repo
