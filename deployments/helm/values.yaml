@@ -1,0 +1,13 @@
+replicaCount: 1
+image:
+  repository: asia-southeast1-docker.pkg.dev/smart-coop-servers/smartcoop-os/smartcoop-os-uat
+  pullPolicy: IfNotPresent
+  tag: 35a189ed2ddcf4e149e7b720b1d2b50726f3d75f
+
+service:
+  type: ClusterIP
+  Port: 8080
+  
+rabbitmq: 
+ username: "nanosoftadmin"
+ password: "HgFtQay4F1k$h"

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: smartcoop-os
+description: A Helm chart for smartcoop-os
+version: 0.1.0
+appVersion: "1.0"

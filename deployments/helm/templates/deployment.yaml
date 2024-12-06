@@ -1,0 +1,202 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "smartcoop-os.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "smartcoop-os.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "smartcoop-os.fullname" . }}
+    spec:
+      serviceAccountName: gke-service-account
+      containers:
+      - name: smartcoop-os
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+        ports:
+        - containerPort: {{ .Values.service.Port }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/appsettings.json
+          subPath: appsettings.json
+      - name: cloud-sql-proxy
+        image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.0
+        args:
+          - "--private-ip"
+          - "--structured-logs"
+          - "--port=3306"
+          - "smart-coop-servers:asia-southeast1:sc-mysql-server-001"
+          - "--credentials-file=/secrets/key.json"
+        securityContext:
+          runAsNonRoot: true
+        volumeMounts:
+        - name: service-secret
+          mountPath: /secrets/
+          readOnly: true
+        
+      volumes:
+      - name: config-volume
+        configMap:
+          name: smartcoop-os-sec
+      - name: service-secret
+        secret:
+          secretName: service-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3-management
+        env:
+        - name: TZ
+          value: Asia/Colombo
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "smartcoop-os.fullname" . }}-rabbitmq-credentials
+              key: username
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "smartcoop-os.fullname" . }}-rabbitmq-credentials
+              key: password
+             
+        volumeMounts:
+        - name: rabbitmq-data
+          mountPath: /var/lib/rabbitmq
+      volumes:
+      - name: rabbitmq-data
+        persistentVolumeClaim:
+          claimName: rabbitmq-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seq
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: seq
+  template:
+    metadata:
+      labels:
+        app: seq
+    spec:
+      containers:
+      - name: seq
+        image: datalust/seq
+        ports:
+        - containerPort: 5341
+        env:
+        - name: TZ
+          value: Asia/Colombo
+        - name: ACCEPT_EULA
+          value: "Y"             
+        volumeMounts:
+        - name: seq-storage
+          mountPath: /data
+      volumes:
+      - name: seq-storage
+        persistentVolumeClaim:
+          claimName: seq-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: seq-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:latest
+        ports:
+        - containerPort: 6379
+        env:
+        - name: TZ
+          value: Asia/Colombo
+---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: krakend-deployment
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: krakend
+#   template:
+#     metadata:
+#       labels:
+#         app: krakend
+#     spec:
+#       containers:
+#       - name: krakend
+#         image: devopsfaith/krakend
+#         ports:
+#         - containerPort: 8080
+#         - containerPort: 8090
+#         volumeMounts:
+#         - name: krakend-config-volume
+#           mountPath: /etc/krakend
+#         env:
+#         - name: TZ
+#           value: Asia/Colombo
+#       volumes:
+#       - name: krakend-config-volume
+#         configMap:
+#           name: krakend-config

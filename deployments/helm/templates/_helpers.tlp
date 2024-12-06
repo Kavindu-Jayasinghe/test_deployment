@@ -1,0 +1,7 @@
+{{- define "smartcoop-os.name" -}}
+{{- printf "%s" .Chart.Name -}}
+{{- end -}}
+
+{{- define "smartcoop-os.fullname" -}}
+{{- printf "%s-%s" (include "smartcoop-os.name" .) .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
