@@ -53,10 +53,13 @@ jobs:
          cat repo/SmartCOOP.IB.API/SmartCOOP.IB.API.csproj
 
       - name: Build and Push Docker Image
-        run: |
-           docker buildx build --platform linux/amd64 --push \
-           -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${GITHUB_SHA} \
-           -f repo/SmartCOOP.IB.API/Dockerfile . repo
+        run: | 
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${GITHUB_SHA} \
+          -f SmsMate.Processor/Dockerfile .
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${GITHUB_SHA}
+           # docker buildx build --platform linux/amd64 --push \
+           # -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${GITHUB_SHA} \
+           # -f repo/SmartCOOP.IB.API/Dockerfile . repo
       - name: Clone deployment Repository
         run: |
           git clone --depth 1 --branch main https://${{ secrets.PAT_TOKEN }}@github.com/sgnanosoftglobal/coop_os_prod_deployment helm-repo
