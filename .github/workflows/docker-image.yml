@@ -1,0 +1,80 @@
+name: Build and Deploy
+
+on:
+  repository_dispatch:
+    types:
+      - source-code-changed
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: asia-southeast1
+  GAR_LOCATION: ${{ secrets.GCP_ARTIFACT_REPOSITORY }}
+  PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone Source Repository
+        run: |
+          git clone --depth 1 --branch master https://${{ secrets.PAT_TOKEN }}@github.com/sgnanosoftglobal/SmartCOOP-OS repo
+          cd repo
+          git checkout ${{ github.event.client_payload.branch }}
+          git branch
+        
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
+
+      - name: Configure Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Authenticate Docker to GAR
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # - name: List Repository Contents
+      #   run: |
+      #     ls -la
+      #     ls -la repo
+      #     ls -la repo/SmartCOOP-OS
+      - name: Debug File Locations
+        run: |
+         ls -la repo/SmartCOOP.IB.API
+         cat repo/SmartCOOP.IB.API/SmartCOOP.IB.API.csproj
+
+      - name: Build and Push Docker Image
+        run: |
+          docker buildx build --platform linux/amd64 --push \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${{ github.event.client_payload.commit_sha }} \
+            -f repo/SmartCOOP.IB.API/Dockerfile repo
+      - name: Clone deployment Repository
+        run: |
+          git clone --depth 1 --branch main https://${{ secrets.PAT_TOKEN }}@github.com/sgnanosoftglobal/coop_os_prod_deployment helm-repo
+          cd helm-repo
+      - name: Update Helm Chart Values
+        run: |
+          sed -i "s/tag: .*/tag: ${{ github.event.client_payload.commit_sha }}/" helm-repo/deployments/helm/values.yaml
+
+      - name: List Repository Contents
+        run: |
+          ls -la
+          ls -la repo
+      - name: Commit and Push Updated Helm Chart
+        run: |
+          cd helm-repo
+          set -x
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add deployments/helm/values.yaml
+          git commit -m "Update Helm chart values for ${{ github.event.client_payload.commit_sha }}"
+          git push origin main
