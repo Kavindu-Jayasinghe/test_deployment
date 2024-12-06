@@ -54,7 +54,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker buildx build --platform linux/amd64 --push -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${{ github.event.client_payload.commit_sha }} -f repo/SmartCOOP.IB.API/Dockerfile .
+           docker buildx build --platform linux/amd64 --push -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os:${GITHUB_SHA} -f SmsMate.Processor/Dockerfile .
             
             
       - name: Clone deployment Repository
