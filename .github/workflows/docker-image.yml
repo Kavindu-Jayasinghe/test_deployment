@@ -54,10 +54,11 @@ jobs:
 
       - name: Build and Push Docker Image
         run: | 
+           TIMESTAMP=$(date +%Y%m%d%H%M%S)
            docker buildx build --platform linux/amd64 --push \
-            -t new \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.GAR_LOCATION }}/smartcoop-os-uat:${TIMESTAMP} \
             -f repo/SmartCOOP.IB.API/Dockerfile repo
-          
+           echo "IMAGE_TAG=${TIMESTAMP}" >> $GITHUB_ENV 
       - name: helm repo
         run: |
           git clone --depth 1 --branch main https://${{ secrets.PAT_TOKEN }}@github.com/sgnanosoftglobal/coop_os_prod_deployment helm-repo
