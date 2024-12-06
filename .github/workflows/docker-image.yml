@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Clone Source Repository
         run: |
-          git clone --depth 1 --branch uat https://${{ secrets.PAT_TOKEN }}@github.com/sgnanosoftglobal/SmartCOOP-OS repo
+          git clone --depth 1 --branch master https://${{ secrets.PAT_TOKEN }}@github.com/sgnanosoftglobal/SmartCOOP-OS repo
           cd repo
           git checkout ${{ github.event.client_payload.branch }}
           git branch
